@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SGGeometry;
 
 public class ShapeObject : MonoBehaviour {
     public Vector3 Size
@@ -24,9 +25,12 @@ public class ShapeObject : MonoBehaviour {
             return new Vector3[] { x, y, z };
         }
     }
+    public Meshable meshable;
 
-	// Use this for initialization
-	void Start () {
+    private MeshFilter meshFilter;
+    private MeshRenderer meshRenderer;
+    // Use this for initialization
+    void Start () {
 		
 	}
 	
@@ -110,5 +114,40 @@ public class ShapeObject : MonoBehaviour {
         GL.End();
         GL.PopMatrix();
     }
+    void SetMeshable(Meshable imeshable, Vector3? direction=null)
+    {
+        meshable = imeshable;
+        Vector3 vectu;
+        if (direction.HasValue) vectu = direction.Value;
+        else vectu = new Vector3(1, 0, 0);
+        BoundingBox bbox = meshable.GetBoundingBox(vectu);
+        transform.position = bbox.position;
+        transform.localScale = bbox.size;
+        Vector3[] vects = bbox.vects;
+        transform.forward = vects[2];
+        transform.up = vects[1];
 
+        //Mesh mesh = meshable.GetMeshForm();
+        Mesh normalMesh = meshable.GetNormalizedMesh(bbox);
+        meshFilter.mesh = normalMesh;
+
+    }
+    public static ShapeObject CreateBasic()
+    {
+        GameObject o = new GameObject();
+        ShapeObject so = o.AddComponent<ShapeObject>();
+        so.meshFilter = o.AddComponent<MeshFilter>();
+        so.meshRenderer = o.AddComponent<MeshRenderer>();
+        return so;
+    }
+    public static ShapeObject CreatePolygon(Vector3[] pts)
+    {
+        Polygon pg = new Polygon(pts);
+        ShapeObject so = ShapeObject.CreateBasic();
+        Vector3? ld = PointsBase.LongestDirection(pts);
+        so.SetMeshable(pg, ld);
+
+        return so;
+
+    }
 }
